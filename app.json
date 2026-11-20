@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "TTCL",
+    "slug": "ttcl-mobile",
+    "scheme": "ttcl",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "platforms": ["android", "ios"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TTCL uses your photos to set your player profile image.",
+          "cameraPermission": "TTCL uses your camera to take a player profile image.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ttcl.mobile"
+    },
+    "android": {
+      "package": "com.ttcl.mobile",
+      "permissions": ["android.permission.CAMERA"],
+      "adaptiveIcon": {
+        "backgroundColor": "#060D17"
+      }
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
