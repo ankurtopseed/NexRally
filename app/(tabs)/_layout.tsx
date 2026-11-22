@@ -1,6 +1,7 @@
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import { ChartNoAxesCombined, House, Images, Trophy, UserRound } from "lucide-react-native";
 import { colors } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
 
 const icons = {
   home: House,
@@ -11,6 +12,8 @@ const icons = {
 } as const;
 
 export default function TabLayout() {
+  const { status } = useAuth();
+  if (status === "signedOut") return <Redirect href="/welcome" />;
   return (
     <Tabs
       screenOptions={({ route }) => {

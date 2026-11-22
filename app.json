@@ -7,7 +7,11 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "platforms": ["android", "ios"],
+    "platforms": [
+      "android",
+      "ios",
+      "web"
+    ],
     "plugins": [
       "expo-router",
       "expo-secure-store",
@@ -26,13 +30,25 @@
     },
     "android": {
       "package": "com.ttcl.mobile",
-      "permissions": ["android.permission.CAMERA"],
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#060D17"
       }
     },
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "d4877257-8225-4878-93c5-d6b7ffb68b44"
+      }
     }
   }
 }

@@ -25,18 +25,15 @@ const schema = z.object({
     .regex(/[0-9]/, "Include a number.")
     .regex(/[^A-Za-z0-9]/, "Include a symbol."),
   confirm_password: z.string(),
-  organization: z.string(),
-  city: z.string(),
-  state: z.string(),
-  playing_hand: z.enum(["right", "left"]),
-  player_category: z.enum(["amateur", "intermediate", "advanced", "professional"]),
+  organization: z.string().trim().min(1, "Organization is required."),
+  city: z.string().trim().min(1, "City is required."),
+  state: z.string().trim().min(1, "State is required."),
   accepted_terms: z.boolean().refine(Boolean, "Please accept the terms and privacy policy."),
 }).refine((value) => value.password === value.confirm_password, {
   path: ["confirm_password"],
   message: "Passwords do not match.",
 });
 type FormData = z.infer<typeof schema>;
-const categories: FormData["player_category"][] = ["amateur", "intermediate", "advanced", "professional"];
 
 export default function SignUpScreen() {
   const { signUp } = useAuth();
@@ -46,24 +43,24 @@ export default function SignUpScreen() {
     resolver: zodResolver(schema),
     defaultValues: {
       first_name: "", last_name: "", email: "", mobile_number: "", password: "",
-      confirm_password: "", organization: "", city: "", state: "", playing_hand: "right",
-      player_category: "amateur", accepted_terms: false,
+      confirm_password: "", organization: "", city: "", state: "", accepted_terms: false,
     },
   });
   const accepted = watch("accepted_terms");
-  const hand = watch("playing_hand");
-  const category = watch("player_category");
 
   const submit = handleSubmit(async (values) => {
     setServerError(null);
     setRegistrationMessage(null);
-    const { confirm_password, accepted_terms, ...payload } = values;
+    const { accepted_terms, organization, ...payload } = values;
     try {
-      await signUp({
-        ...Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, String(value).trim()])),
-        terms_accepted: String(accepted_terms),
+      const message = await signUp({
+        ...Object.fromEntries(Object.entries(payload).map(([key, value]) => [
+          key, key === "password" || key === "confirm_password" ? value : value.trim(),
+        ])),
+        organisation_name: organization.trim(),
+        accept_terms: String(accepted_terms),
       });
-      setRegistrationMessage("Your account is ready. Check your email if verification is required, then sign in.");
+      setRegistrationMessage(message);
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Unable to create your account.");
     }
@@ -90,22 +87,10 @@ export default function SignUpScreen() {
         <FormField control={control} name="mobile_number" label="MOBILE NUMBER" placeholder="+1 555 000 0000" keyboardType="phone-pad" autoComplete="tel" />
         <FormField control={control} name="password" label="PASSWORD" placeholder="At least 10 characters" secure autoComplete="new-password" />
         <FormField control={control} name="confirm_password" label="CONFIRM PASSWORD" placeholder="Re-enter your password" secure autoComplete="new-password" />
-        <FormField control={control} name="organization" label="ORGANIZATION / COMPANY" placeholder="Optional" autoCapitalize="words" />
+        <FormField control={control} name="organization" label="ORGANIZATION / COMPANY" placeholder="Organization" autoCapitalize="words" />
         <View style={styles.row}>
           <View style={styles.half}><FormField control={control} name="city" label="CITY" placeholder="City" autoCapitalize="words" /></View>
           <View style={styles.half}><FormField control={control} name="state" label="STATE" placeholder="State" autoCapitalize="words" /></View>
-        </View>
-        <Text style={styles.fieldLabel}>PLAYING HAND</Text>
-        <View style={styles.choiceRow}>
-          {(["right", "left"] as const).map((value) => (
-            <Choice key={value} title={`${value.toUpperCase()} HANDED`} selected={hand === value} onPress={() => setValue("playing_hand", value, { shouldValidate: true })} />
-          ))}
-        </View>
-        <Text style={styles.fieldLabel}>PLAYER CATEGORY</Text>
-        <View style={styles.categories}>
-          {categories.map((value) => (
-            <Choice key={value} title={value.toUpperCase()} selected={category === value} onPress={() => setValue("player_category", value, { shouldValidate: true })} />
-          ))}
         </View>
         <Pressable
           style={styles.terms}
@@ -125,14 +110,6 @@ export default function SignUpScreen() {
         <Text style={styles.footerText}>ALREADY REGISTERED? <Text style={styles.link}>SIGN IN</Text></Text>
       </Pressable>
     </Screen>
-  );
-}
-
-function Choice({ title, selected, onPress }: { title: string; selected: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected }} style={[styles.choice, selected && styles.choiceSelected]}>
-      <Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{title}</Text>
-    </Pressable>
   );
 }
 

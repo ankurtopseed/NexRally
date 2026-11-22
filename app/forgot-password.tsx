@@ -27,7 +27,7 @@ export default function ForgotPasswordScreen() {
     setError(null);
     setMessage(null);
     try {
-      await apiRequest("/api/v1/auth/forgot-password", {
+      await apiRequest("/api/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify({ email: email.trim() }),
       });

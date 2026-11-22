@@ -20,7 +20,9 @@ export default function HomeScreen() {
   const player = playerQuery.data;
   const displayName = player?.first_name ?? player?.name?.split(" ")[0] ?? "Player";
   const stats: PlayerStats = player?.stats ?? {};
-  const firstTournament = tournamentsQuery.data?.[0];
+  const firstTournament = tournamentsQuery.data
+    ?.filter((item) => item.registration_status === "upcoming" && item.start_date && new Date(item.start_date).getTime() > Date.now())
+    .sort((a, b) => new Date(a.start_date!).getTime() - new Date(b.start_date!).getTime())[0];
   const topRanked = rankingsQuery.data?.slice(0, 3) ?? [];
 
   return (
@@ -51,7 +53,7 @@ export default function HomeScreen() {
       {tournamentsQuery.isLoading ? <Panel><Text style={styles.muted}>Loading tournaments…</Text></Panel> :
         tournamentsQuery.isError ? <Panel><StateMessage title="Tournaments unavailable" detail={tournamentsQuery.error.message} onRetry={() => void tournamentsQuery.refetch()} /></Panel> :
           firstTournament ? <TournamentCard item={firstTournament} onPress={() => router.push(`/tournament/${firstTournament.id}`)} /> :
-            <Panel><Text style={styles.muted}>No tournaments are published right now. Check back soon.</Text></Panel>}
+            <Panel><Text style={styles.muted}>No upcoming tournaments right now. Check back soon.</Text></Panel>}
 
       <View style={styles.sectionHeader}>
         <View><Eyebrow>THE LEAGUE</Eyebrow><Text style={styles.sectionTitle}>Top players</Text></View>

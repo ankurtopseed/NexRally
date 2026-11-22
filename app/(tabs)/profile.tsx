@@ -3,7 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { Camera, LogOut, Pencil, Save, UserRound } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ActionButton } from "@/components/ActionButton";
 import { AppHeader } from "@/components/AppHeader";
 import { Eyebrow, PageHeading, Panel } from "@/components/Panel";
@@ -13,7 +13,6 @@ import { useAuth } from "@/lib/auth";
 import { authedRequest } from "@/lib/api";
 import { usePlayer } from "@/lib/queries";
 import { colors, radius } from "@/lib/theme";
-import { Player } from "@/lib/types";
 
 type ProfileDraft = {
   first_name?: string;
@@ -21,6 +20,7 @@ type ProfileDraft = {
   organization?: string;
   city?: string;
   state?: string;
+  mobile_number?: string;
 };
 
 export default function ProfileScreen() {
@@ -41,33 +41,49 @@ export default function ProfileScreen() {
         organization: player.organization ?? "",
         city: player.city ?? "",
         state: player.state ?? "",
+        mobile_number: player.mobile_number ?? "",
       });
     }
   }, [player]);
 
   const saveMutation = useMutation({
-    mutationFn: (data: ProfileDraft) => authedRequest<Player>("/api/v1/players/me", {
-      method: "PATCH",
-      body: JSON.stringify(data),
+    mutationFn: (data: ProfileDraft) => authedRequest("/api/players/me", {
+      method: "PUT",
+      body: JSON.stringify({
+        first_name: data.first_name,
+        last_name: data.last_name,
+        mobile_number: data.mobile_number,
+        organisation_name: data.organization,
+        city: data.city,
+        state: data.state,
+        date_of_birth: player?.date_of_birth ?? null,
+        gender: player?.gender ?? null,
+        forehand_rubber: player?.forehand_rubber ?? null,
+        backhand_rubber: player?.backhand_rubber ?? null,
+        blade: player?.blade ?? null,
+      }),
     }),
-    onSuccess: async (updated) => {
-      queryClient.setQueryData(["player", "me"], updated);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["player", "me"] });
       setEditing(false);
       setMessage("Profile updated.");
     },
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async (uri: string) => {
-      const response = await fetch(uri);
-      if (!response.ok) throw new Error("Unable to read the selected image.");
-      const file = await response.blob();
-      if (!file.type.startsWith("image/")) throw new Error("Choose a supported image file.");
-      if (file.size > 5 * 1024 * 1024) throw new Error("Profile photos must be 5 MB or smaller.");
+    mutationFn: async (asset: ImagePicker.ImagePickerAsset) => {
+      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) throw new Error("Profile photos must be 5 MB or smaller.");
       const form = new FormData();
-      form.append("file", file, "profile-photo.jpg");
-      await authedRequest<void>("/api/v1/players/me/photo", { method: "POST", body: form });
-      return uri;
+      if (Platform.OS === "web") {
+        const response = await fetch(asset.uri);
+        if (!response.ok) throw new Error("Unable to read the selected image.");
+        const file = await response.blob();
+        form.append("profile_photo", file, asset.fileName || "profile-photo.jpg");
+      } else {
+        form.append("profile_photo", { uri: asset.uri, name: asset.fileName || "profile-photo.jpg", type: asset.mimeType || "image/jpeg" } as unknown as Blob);
+      }
+      await authedRequest("/api/players/me/photo", { method: "POST", body: form });
+      return asset.uri;
     },
     onSuccess: async (uri) => {
       setPhoto(uri);
@@ -96,7 +112,7 @@ export default function ProfileScreen() {
     const result = source === "camera"
       ? await ImagePicker.launchCameraAsync(options)
       : await ImagePicker.launchImageLibraryAsync(options);
-    if (!result.canceled) uploadMutation.mutate(result.assets[0].uri);
+    if (!result.canceled) uploadMutation.mutate(result.assets[0]);
   };
 
   const choosePhoto = () => Alert.alert("Profile photo", "Choose how to add a profile photo.", [
@@ -111,7 +127,7 @@ export default function ProfileScreen() {
       style: "destructive",
       onPress: () => {
         void signOut().catch((reason: unknown) => {
-          Alert.alert("Signed out", `Your session was cleared, but the server logout request failed: ${reason instanceof Error ? reason.message : "unknown error"}`);
+          Alert.alert("Unable to sign out", reason instanceof Error ? reason.message : "Please try again.");
         });
       },
     },
@@ -153,7 +169,7 @@ export default function ProfileScreen() {
               {editing ? (
                 <Panel style={styles.details}>
                   <Text style={styles.sectionTitle}>EDIT PLAYER DETAILS</Text>
-                  {(["first_name", "last_name", "organization", "city", "state"] as const).map((field) => (
+                  {(["first_name", "last_name", "mobile_number", "organization", "city", "state"] as const).map((field) => (
                     <View key={field} style={styles.field}>
                       <Text style={styles.fieldLabel}>{field.replace("_", " ").toUpperCase()}</Text>
                       <TextInput
@@ -174,8 +190,7 @@ export default function ProfileScreen() {
                   <Text style={styles.sectionTitle}>PLAYER DETAILS</Text>
                   <Detail label="ORGANIZATION" value={player.organization} />
                   <Detail label="LOCATION" value={[player.city, player.state].filter(Boolean).join(", ")} />
-                  <Detail label="PLAYING HAND" value={player.playing_hand ? `${player.playing_hand} handed` : null} />
-                  <Detail label="CATEGORY" value={player.player_category} last />
+                  <Detail label="MOBILE NUMBER" value={player.mobile_number} last />
                 </Panel>
               )}
             </>

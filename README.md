@@ -1,67 +1,25 @@
 # TTCL Mobile
 
-A native Android/iOS Expo application for Table Tennis Corporate League players. The app uses Expo Router, TypeScript, React Query, React Hook Form/Zod, SecureStore, Reanimated, and the proposed TTCL REST API routes.
-
-## Requirements
-
-- Node.js LTS and npm
-- Expo Go for basic UI iteration, or an Expo development build for native modules and production-like testing
-- An accessible TTCL API implementing the routes listed below
-- EAS CLI for cloud Android/iOS builds
+A native Android/iOS Expo application for Table Tennis Corporate League players.
 
 ## Setup
 
-```powershell
-npm install
-Copy-Item .env.example .env
-```
+Install dependencies with `npm install`, then run `npm start`. The app defaults to the API at `https://api.ttcl.co.in`. To use another backend, copy `.env.example` to `.env`, set `EXPO_PUBLIC_API_BASE_URL` to its origin, and restart Expo. The older `EXPO_PUBLIC_API_URL` is supported if the new variable is unset. Physical devices cannot use the development computer's `localhost`. Production builds require HTTPS. Expo public environment variables are embedded at build time; rebuild after changing them.
 
-Set `EXPO_PUBLIC_API_URL` in `.env` to the API origin, without a trailing slash. On a physical phone, use an HTTPS development endpoint or your computer's LAN IP (not `localhost`). Production builds reject non-HTTPS API URLs.
+Run `npm run typecheck` and `npm test` for validation. EAS build profiles are in `eas.json`.
 
-```powershell
-npm run typecheck
-npm test
-npm start
-```
+## Backend integration
 
-Use the Expo CLI prompts to open Android/iOS. Run `npx expo install --check` if you change Expo SDK package versions.
+The deployed FastAPI contract is available at `https://api.ttcl.co.in/api/docs`. The app uses:
 
-## Backend contract
+- `POST /api/auth/register` (multipart player fields), `POST /api/auth/mobile/login`, `POST /api/auth/mobile/refresh`, `POST /api/auth/mobile/logout`, `GET /api/auth/me`, and `POST /api/auth/forgot-password`.
+- `PUT /api/players/me` and `POST /api/players/me/photo` to edit the profile.
+- `GET /api/events?limit=200`, `GET /api/rankings`, and `GET /api/public/photos` for league data. Tournament details are derived from the events list because the API does not expose a single-event GET. The events endpoint currently returns at most 200 items.
 
-This workspace did not contain the existing TTCL backend or its schema. The mobile app therefore uses the proposed REST paths and expects conventional JSON responses. Confirm request/response field names against the actual TTCL service before connecting:
+The updated backend must be deployed with migration `0019_mobile_refresh_tokens` applied before mobile sign-in works. Configure `MOBILE_ACCESS_TOKEN_MINUTES=15` and `MOBILE_REFRESH_TOKEN_DAYS=30` on the backend, keeping the existing JWT signing secret unchanged.
 
-- `POST /api/v1/auth/register` with player fields; may return `access_token` and optional `refresh_token`, or a verification response
-- `POST /api/v1/auth/login` with `{ "email", "password" }`, returning `{ "access_token", "refresh_token"?, "player"? }`
-- `POST /api/v1/auth/refresh` with `{ "refresh_token" }`, returning refreshed token fields
-- `POST /api/v1/auth/logout`
-- `POST /api/v1/auth/forgot-password` with `{ "email" }`
-- `GET` and `PATCH /api/v1/players/me`
-- `POST /api/v1/players/me/photo` as multipart form data with a `file` field
-- `GET /api/v1/tournaments`, `GET /api/v1/tournaments/{id}`, `GET /api/v1/rankings`, and `GET /api/v1/gallery`
+Native authentication uses bearer access tokens and rotating refresh tokens stored together in Expo SecureStore. Concurrent expired requests share one refresh. Successful logout revokes the backend session. Expo web holds tokens in memory only, so reloading requires signing in again; it does not persist tokens in browser storage. Verification and password-reset links are sent by the backend and open the TTCL website. No database credentials or service keys belong in the app.
 
-List routes may return a JSON array or `{ "items": [...] }` / `{ "results": [...] }`. Configure the server for authenticated access where required, CORS is not needed for native networking, and consistent JSON error bodies (`detail` or `message`) are recommended.
+The gallery displays images; backend videos are not currently supported. The home screen does not invent player statistics the API does not supply.
 
-No database credentials or service keys belong in this application. Tokens are held in Expo SecureStore; passwords are never persisted. The API client enforces HTTPS outside development, applies a 15-second timeout, reports server errors, and refreshes an expired access token once when a refresh token is available.
-
-## Build
-
-Configure EAS project identity and app identifiers in `app.json`, then:
-
-```powershell
-npx eas-cli build --profile development --platform android
-npx eas-cli build --profile preview --platform ios
-npx eas-cli build --profile production --platform all
-```
-
-The welcome screen uses the supplied table-tennis image as its full-screen background, with a dark gradient overlay to keep the copy readable. The official TTCL logo asset was not included, so the app still uses the text-based brand treatment.
-
-The focused unit tests cover date formatting and normalization of the list response shapes accepted by the API layer.
-
-## Project map
-
-- `app/`: Expo Router screens and five authenticated tabs
-- `components/`: shared visual components and form controls
-- `lib/api.ts`: REST client, timeout/error handling, and refresh-token flow
-- `lib/auth.tsx`: session restoration and SecureStore-backed auth actions
-- `lib/queries.ts`: cached tournament, ranking, gallery, and player data
-- `.env.example`: public API-origin configuration only
+The optional Expo web build requires its exact origin in backend `FRONTEND_ORIGINS` and CORS permission for the `Authorization` header. Native requests do not use browser CORS. Mobile requests omit cookies and do not require CSRF tokens.

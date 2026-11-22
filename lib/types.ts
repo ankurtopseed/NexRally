@@ -4,12 +4,18 @@ export type Player = {
   last_name?: string;
   name?: string;
   email?: string;
+  mobile_number?: string;
   profile_photo_url?: string | null;
   city?: string | null;
   state?: string | null;
   organization?: string | null;
   playing_hand?: "right" | "left" | string;
   player_category?: string;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  forehand_rubber?: string | null;
+  backhand_rubber?: string | null;
+  blade?: string | null;
   stats?: PlayerStats;
 };
 

@@ -7,9 +7,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { Eyebrow, PageHeading, Panel } from "@/components/Panel";
 import { Screen } from "@/components/Screen";
 import { StateMessage } from "@/components/StateMessage";
-import { authedRequest } from "@/lib/api";
+import { fetchTournaments } from "@/lib/queries";
 import { colors } from "@/lib/theme";
-import { Tournament } from "@/lib/types";
 
 function dateLabel(date?: string | null) {
   if (!date) return "To be announced";
@@ -21,7 +20,7 @@ export default function TournamentDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const query = useQuery({
     queryKey: ["tournaments", id],
-    queryFn: () => authedRequest<Tournament>(`/api/v1/tournaments/${encodeURIComponent(id)}`),
+    queryFn: async () => (await fetchTournaments()).find((event) => String(event.id) === id),
     enabled: Boolean(id),
   });
   const item = query.data;
@@ -46,7 +45,7 @@ export default function TournamentDetailsScreen() {
               {item.event_categories?.length ? <Panel style={styles.section}><Eyebrow>EVENT CATEGORIES</Eyebrow><Text style={styles.body}>{item.event_categories.join("  ·  ")}</Text></Panel> : null}
               {item.eligibility ? <Panel style={styles.section}><Eyebrow>PLAYER ELIGIBILITY</Eyebrow><Text style={styles.body}>{item.eligibility}</Text></Panel> : null}
               {item.rules ? <Panel style={styles.section}><Eyebrow>TOURNAMENT RULES</Eyebrow><Text style={styles.body}>{item.rules}</Text></Panel> : null}
-              <View style={styles.status}><Text style={styles.statusLabel}>REGISTRATION STATUS</Text><Text style={styles.statusValue}>{item.registration_status?.replaceAll("_", " ").toUpperCase() || "CHECK WITH ORGANIZER"}</Text></View>
+              <View style={styles.status}><Text style={styles.statusLabel}>EVENT STATUS</Text><Text style={styles.statusValue}>{item.registration_status?.replaceAll("_", " ").toUpperCase() || "CHECK WITH ORGANIZER"}</Text></View>
             </>
           ) : <Panel><StateMessage title="Tournament not found" detail="It may have been unpublished or moved." /></Panel>}
     </Screen>
