@@ -11,6 +11,7 @@ import { FormField } from "@/components/FormField";
 import { Panel } from "@/components/Panel";
 import { Screen } from "@/components/Screen";
 import { useAuth } from "@/lib/auth";
+import { goBackOrReplace } from "@/lib/navigation";
 import { colors } from "@/lib/theme";
 
 const schema = z.object({
@@ -68,7 +69,7 @@ export default function SignUpScreen() {
 
   return (
     <Screen scroll contentStyle={styles.content}>
-      <Pressable style={styles.back} onPress={() => router.back()} accessibilityRole="button">
+      <Pressable style={styles.back} onPress={() => goBackOrReplace("/(tabs)/home")} accessibilityRole="button">
         <ArrowLeft size={18} color={colors.textMuted} />
         <Text style={styles.backText}>BACK</Text>
       </Pressable>

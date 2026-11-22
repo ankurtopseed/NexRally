@@ -57,3 +57,26 @@ export type PlayerStats = {
   current_ranking?: number;
   ranking_points?: number;
 };
+
+export type LeagueStats = {
+  events_conducted: number;
+  registered_players: number;
+  organisations: number;
+  tournaments_completed: number;
+};
+
+export type SiteSettings = {
+  about_text?: string;
+  contact_email?: string;
+};
+
+export type Sponsor = {
+  id: number;
+  kind: "sponsor" | "product";
+  name: string;
+  sponsor_name: string | null;
+  description: string | null;
+  image_url: string | null;
+  link_url: string | null;
+  featured: boolean;
+};

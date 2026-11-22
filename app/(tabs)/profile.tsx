@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { Camera, LogOut, Pencil, Save, UserRound } from "lucide-react-native";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ActionButton } from "@/components/ActionButton";
@@ -24,9 +25,9 @@ type ProfileDraft = {
 };
 
 export default function ProfileScreen() {
-  const { signOut } = useAuth();
+  const { status, signOut } = useAuth();
   const queryClient = useQueryClient();
-  const query = usePlayer();
+  const query = usePlayer(status === "signedIn");
   const player = query.data;
   const [editing, setEditing] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -120,19 +121,40 @@ export default function ProfileScreen() {
     { text: "Choose from library", onPress: () => { void selectPhoto("library"); } },
     { text: "Cancel", style: "cancel" },
   ]);
-  const confirmSignOut = () => Alert.alert("Sign out?", "You'll need to sign in again to access your league profile.", [
+  const doSignOut = () => {
+    void signOut().catch((reason: unknown) => {
+      const message = reason instanceof Error ? reason.message : "Please try again.";
+      if (Platform.OS === "web") setMessage(message);
+      else Alert.alert("Unable to sign out", message);
+    });
+  };
+  const confirmSignOut = () => {
+    if (Platform.OS === "web") {
+      if (globalThis.confirm("Sign out?")) doSignOut();
+      return;
+    }
+    Alert.alert("Sign out?", "You'll need to sign in again to access your league profile.", [
     { text: "Cancel", style: "cancel" },
     {
       text: "Sign out",
       style: "destructive",
       onPress: () => {
-        void signOut().catch((reason: unknown) => {
-          Alert.alert("Unable to sign out", reason instanceof Error ? reason.message : "Please try again.");
-        });
+        doSignOut();
       },
     },
-  ]);
+    ]);
+  };
   const fullName = [player?.first_name, player?.last_name].filter(Boolean).join(" ") || player?.name || "TTCL Player";
+
+  if (status !== "signedIn") {
+    return (
+      <Screen scroll contentStyle={styles.content}>
+        <AppHeader />
+        <PageHeading title="Your profile" subtitle="Sign in to view and manage your player profile." />
+        <Panel><ActionButton title="SIGN IN" onPress={() => router.push("/sign-in")} /></Panel>
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll contentStyle={styles.content}>

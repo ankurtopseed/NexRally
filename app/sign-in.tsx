@@ -12,6 +12,7 @@ import { Panel } from "@/components/Panel";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
+import { goBackOrReplace } from "@/lib/navigation";
 
 const schema = z.object({
   email: z.email("Enter a valid email address."),
@@ -39,7 +40,7 @@ export default function SignInScreen() {
 
   return (
     <Screen scroll contentStyle={styles.content}>
-      <Pressable style={styles.back} onPress={() => router.back()} accessibilityRole="button">
+      <Pressable style={styles.back} onPress={() => goBackOrReplace("/(tabs)/home")} accessibilityRole="button">
         <ArrowLeft size={18} color={colors.textMuted} />
         <Text style={styles.backText}>BACK</Text>
       </Pressable>

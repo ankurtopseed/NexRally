@@ -15,11 +15,14 @@ The deployed FastAPI contract is available at `https://api.ttcl.co.in/api/docs`.
 - `POST /api/auth/register` (multipart player fields), `POST /api/auth/mobile/login`, `POST /api/auth/mobile/refresh`, `POST /api/auth/mobile/logout`, `GET /api/auth/me`, and `POST /api/auth/forgot-password`.
 - `PUT /api/players/me` and `POST /api/players/me/photo` to edit the profile.
 - `GET /api/events?limit=200`, `GET /api/rankings`, and `GET /api/public/photos` for league data. Tournament details are derived from the events list because the API does not expose a single-event GET. The events endpoint currently returns at most 200 items.
+- `GET /api/public/stats`, `GET /api/public/settings`, and `GET /api/public/sponsors` for the home, about, and sponsors pages.
 
 The updated backend must be deployed with migration `0019_mobile_refresh_tokens` applied before mobile sign-in works. Configure `MOBILE_ACCESS_TOKEN_MINUTES=15` and `MOBILE_REFRESH_TOKEN_DAYS=30` on the backend, keeping the existing JWT signing secret unchanged.
 
 Native authentication uses bearer access tokens and rotating refresh tokens stored together in Expo SecureStore. Concurrent expired requests share one refresh. Successful logout revokes the backend session. Expo web holds tokens in memory only, so reloading requires signing in again; it does not persist tokens in browser storage. Verification and password-reset links are sent by the backend and open the TTCL website. No database credentials or service keys belong in the app.
 
 The gallery displays images; backend videos are not currently supported. The home screen does not invent player statistics the API does not supply.
+
+Home, About, Events, Rankings, Gallery, and Sponsors are available without signing in. The Profile page prompts visitors to sign in. Events and gallery requests include a mobile session when available so the backend can include organisation-visible content.
 
 The optional Expo web build requires its exact origin in backend `FRONTEND_ORIGINS` and CORS permission for the `Authorization` header. Native requests do not use browser CORS. Mobile requests omit cookies and do not require CSRF tokens.

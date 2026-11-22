@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
-import { apiRequest, authedRequest, hasSession, loginSession, logoutSession, setUnauthorizedHandler } from "../lib/api";
+import { apiRequest, authedRequest, hasSession, loginSession, logoutSession, optionallyAuthedRequest, setUnauthorizedHandler } from "../lib/api";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
@@ -23,6 +23,18 @@ afterEach(async () => {
 });
 
 describe("mobile API client", () => {
+  it("allows anonymous public requests and includes the session when signed in", async () => {
+    const fetchMock = jest.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(json([]))
+      .mockResolvedValueOnce(json(initial))
+      .mockResolvedValueOnce(json([]));
+    await optionallyAuthedRequest("/api/events");
+    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("Authorization")).toBeNull();
+    await loginSession("player@example.com", "password");
+    await optionallyAuthedRequest("/api/events");
+    expect(new Headers(fetchMock.mock.calls[2][1]?.headers).get("Authorization")).toBe("Bearer access-1");
+  });
+
   it("uses mobile login, bearer authentication and no cookies", async () => {
     const fetchMock = jest.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(json(initial))

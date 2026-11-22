@@ -183,3 +183,7 @@ export async function authedRequest<T>(path: string, options: RequestInit = {}):
     }
   }
 }
+
+export async function optionallyAuthedRequest<T>(path: string): Promise<T> {
+  return (await hasSession()) ? authedRequest<T>(path) : apiRequest<T>(path);
+}

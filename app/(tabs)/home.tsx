@@ -8,18 +8,20 @@ import { AppHeader } from "@/components/AppHeader";
 import { Eyebrow, PageHeading, Panel } from "@/components/Panel";
 import { Screen } from "@/components/Screen";
 import { StateMessage } from "@/components/StateMessage";
-import { usePlayer, useRankings, useTournaments } from "@/lib/queries";
+import { useLeagueStats, usePlayer, useRankings, useTournaments } from "@/lib/queries";
+import { useAuth } from "@/lib/auth";
 import { colors, radius } from "@/lib/theme";
 import { formatDateLabel } from "@/lib/format";
-import { PlayerStats, Tournament } from "@/lib/types";
+import { Tournament } from "@/lib/types";
 
 export default function HomeScreen() {
-  const playerQuery = usePlayer();
+  const { status } = useAuth();
+  const playerQuery = usePlayer(status === "signedIn");
+  const leagueStats = useLeagueStats();
   const tournamentsQuery = useTournaments();
   const rankingsQuery = useRankings();
   const player = playerQuery.data;
-  const displayName = player?.first_name ?? player?.name?.split(" ")[0] ?? "Player";
-  const stats: PlayerStats = player?.stats ?? {};
+  const displayName = player?.first_name ?? player?.name?.split(" ")[0];
   const firstTournament = tournamentsQuery.data
     ?.filter((item) => item.registration_status === "upcoming" && item.start_date && new Date(item.start_date).getTime() > Date.now())
     .sort((a, b) => new Date(a.start_date!).getTime() - new Date(b.start_date!).getTime())[0];
@@ -29,20 +31,21 @@ export default function HomeScreen() {
     <Screen scroll contentStyle={styles.content}>
       <AppHeader name={displayName} />
       <View style={styles.greeting}>
-        <Text style={styles.greetingText}>GOOD TO SEE YOU,</Text>
-        <Text style={styles.name}>{displayName.toUpperCase()}<Text style={styles.period}>.</Text></Text>
+        <Text style={styles.greetingText}>{displayName ? "GOOD TO SEE YOU," : "WELCOME TO"}</Text>
+        <Text style={styles.name}>{displayName?.toUpperCase() ?? "TTCL"}<Text style={styles.period}>.</Text></Text>
       </View>
       <HeroCard onPress={() => router.push("/(tabs)/tournaments")} />
 
       <View style={styles.sectionHeader}>
-        <View><Eyebrow>YOUR SEASON</Eyebrow><Text style={styles.sectionTitle}>At a glance</Text></View>
+        <View><Eyebrow>THE LEAGUE, SO FAR</Eyebrow><Text style={styles.sectionTitle}>At a glance</Text></View>
       </View>
-      <View style={styles.statsGrid}>
-        <Stat label="TOURNAMENTS" value={stats.tournaments_played} icon="trophy" />
-        <Stat label="MATCHES WON" value={stats.matches_won} />
-        <Stat label="CURRENT RANK" value={stats.current_ranking ? `#${stats.current_ranking}` : undefined} />
-        <Stat label="RANKING POINTS" value={stats.ranking_points} />
-      </View>
+      {leagueStats.isError ? <Panel><StateMessage title="League stats unavailable" detail={leagueStats.error.message} onRetry={() => void leagueStats.refetch()} /></Panel> :
+        <View style={styles.statsGrid}>
+          <Stat label="EVENTS CONDUCTED" value={leagueStats.data?.events_conducted} icon="trophy" />
+          <Stat label="REGISTERED PLAYERS" value={leagueStats.data?.registered_players} />
+          <Stat label="ORGANISATIONS" value={leagueStats.data?.organisations} />
+          <Stat label="TOURNAMENTS COMPLETED" value={leagueStats.data?.tournaments_completed} />
+        </View>}
 
       <View style={styles.sectionHeader}>
         <View><Eyebrow>ON THE CALENDAR</Eyebrow><Text style={styles.sectionTitle}>Upcoming tournaments</Text></View>

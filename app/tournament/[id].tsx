@@ -1,4 +1,4 @@
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CalendarDays, MapPin, Wallet } from "lucide-react-native";
 import { Image } from "expo-image";
@@ -9,6 +9,7 @@ import { Screen } from "@/components/Screen";
 import { StateMessage } from "@/components/StateMessage";
 import { fetchTournaments } from "@/lib/queries";
 import { colors } from "@/lib/theme";
+import { goBackOrReplace } from "@/lib/navigation";
 
 function dateLabel(date?: string | null) {
   if (!date) return "To be announced";
@@ -27,7 +28,7 @@ export default function TournamentDetailsScreen() {
   return (
     <Screen scroll contentStyle={styles.content}>
       <AppHeader />
-      <Pressable style={styles.back} onPress={() => router.back()} accessibilityRole="button">
+      <Pressable style={styles.back} onPress={() => goBackOrReplace("/(tabs)/tournaments")} accessibilityRole="button">
         <ArrowLeft size={17} color={colors.accent} /><Text style={styles.backText}>ALL TOURNAMENTS</Text>
       </Pressable>
       {query.isLoading ? <Panel><Text style={styles.muted}>Loading tournament details…</Text></Panel> :

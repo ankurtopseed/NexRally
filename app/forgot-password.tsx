@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -12,6 +11,7 @@ import { Panel } from "@/components/Panel";
 import { Screen } from "@/components/Screen";
 import { apiRequest } from "@/lib/api";
 import { colors } from "@/lib/theme";
+import { goBackOrReplace } from "@/lib/navigation";
 
 const schema = z.object({ email: z.email("Enter a valid email address.") });
 type FormData = z.infer<typeof schema>;
@@ -38,7 +38,7 @@ export default function ForgotPasswordScreen() {
   });
   return (
     <Screen scroll contentStyle={styles.content}>
-      <Pressable style={styles.back} onPress={() => router.back()} accessibilityRole="button">
+      <Pressable style={styles.back} onPress={() => goBackOrReplace("/sign-in")} accessibilityRole="button">
         <ArrowLeft size={18} color={colors.textMuted} /><Text style={styles.backText}>BACK</Text>
       </Pressable>
       <Brand />

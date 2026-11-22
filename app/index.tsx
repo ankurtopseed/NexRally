@@ -38,7 +38,7 @@ export default function Index() {
       </View>
     );
   }
-  return <Redirect href={status === "signedIn" ? "/(tabs)/home" : "/welcome"} />;
+  return <Redirect href="/(tabs)/home" />;
 }
 
 const styles = StyleSheet.create({

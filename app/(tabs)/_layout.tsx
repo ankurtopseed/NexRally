@@ -1,44 +1,50 @@
-import { Redirect, Tabs } from "expo-router";
-import { ChartNoAxesCombined, House, Images, Trophy, UserRound } from "lucide-react-native";
+import { Tabs } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/lib/theme";
-import { useAuth } from "@/lib/auth";
-
-const icons = {
-  home: House,
-  tournaments: Trophy,
-  rankings: ChartNoAxesCombined,
-  gallery: Images,
-  profile: UserRound,
-} as const;
 
 export default function TabLayout() {
-  const { status } = useAuth();
-  if (status === "signedOut") return <Redirect href="/welcome" />;
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
-      screenOptions={({ route }) => {
-        const Icon = icons[route.name as keyof typeof icons] ?? House;
-        return {
-          headerShown: false,
-          tabBarActiveTintColor: colors.accent,
-          tabBarInactiveTintColor: "#73879B",
-          tabBarStyle: {
-            backgroundColor: colors.backgroundAlt,
-            borderTopColor: colors.border,
-            height: 66,
-            paddingTop: 8,
-            paddingBottom: 8,
-          },
-          tabBarLabelStyle: { fontSize: 9, fontWeight: "700", letterSpacing: 0.4 },
-          tabBarIcon: ({ color, size }) => <Icon color={color} size={size} strokeWidth={2} />,
-        };
-      }}
+      screenOptions={{ headerShown: false }}
+      tabBar={({ state, descriptors, emitter, navigateToTab }) => (
+        <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.items}>
+            {state.routes.map((route, index) => {
+              const selected = state.index === index;
+              const label = descriptors[route.key].options.title ?? route.name;
+              return (
+                <Pressable key={route.key} accessibilityRole="tab" accessibilityState={{ selected }}
+                  onPress={() => {
+                    const event = emitter.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+                    if (!selected && !event.defaultPrevented) navigateToTab(route.key);
+                  }}
+                  style={[styles.item, selected && styles.selected]}>
+                  <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
     >
       <Tabs.Screen name="home" options={{ title: "Home" }} />
-      <Tabs.Screen name="tournaments" options={{ title: "Tournaments" }} />
+      <Tabs.Screen name="about" options={{ title: "About" }} />
+      <Tabs.Screen name="tournaments" options={{ title: "Events" }} />
       <Tabs.Screen name="rankings" options={{ title: "Rankings" }} />
       <Tabs.Screen name="gallery" options={{ title: "Gallery" }} />
+      <Tabs.Screen name="sponsors" options={{ title: "Sponsors" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  bar: { backgroundColor: colors.backgroundAlt, borderTopColor: colors.border, borderTopWidth: 1, paddingTop: 8 },
+  items: { paddingHorizontal: 10, gap: 5, alignItems: "center" },
+  item: { paddingHorizontal: 14, paddingVertical: 11, borderRadius: 10 },
+  selected: { backgroundColor: colors.surfaceRaised },
+  label: { color: colors.textMuted, fontSize: 11, fontWeight: "700" },
+  selectedLabel: { color: colors.accent },
+});
